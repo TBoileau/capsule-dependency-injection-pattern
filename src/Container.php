@@ -3,6 +3,7 @@
 namespace TBoileau\DependencyInjection;
 
 use ReflectionClass;
+use ReflectionMethod;
 use ReflectionParameter;
 
 /**
@@ -32,6 +33,11 @@ class Container implements ContainerInterface
     private array $aliases = [];
 
     /**
+     * @var array
+     */
+    private array $factories = [];
+
+    /**
      * @param $id
      * @return $this
      */
@@ -39,15 +45,21 @@ class Container implements ContainerInterface
     {
         $reflectionClass = new ReflectionClass($id);
 
+        if ($reflectionClass->isInterface() && !isset($this->aliases[$id])) {
+            throw new NotFoundException();
+        }
+
         if ($reflectionClass->isInterface()) {
             $this->register($this->aliases[$id]);
             $this->definitions[$id] = &$this->definitions[$this->aliases[$id]];
             return $this;
         }
 
+        $reflectionMethod = $reflectionClass->getConstructor();
+
         $dependencies = [];
 
-        if (null !== $reflectionClass->getConstructor()) {
+        if (null !== $reflectionMethod) {
             $dependencies = array_map(
                 fn (ReflectionParameter $parameter) => $this->getDefinition($parameter->getClass()->getName()),
                 array_filter(
@@ -59,7 +71,22 @@ class Container implements ContainerInterface
 
         $aliases = array_filter($this->aliases, fn (string $alias) => $id === $alias);
 
-        $this->definitions[$id] = new Definition($id, true, $aliases, $dependencies);
+        $factory = null;
+
+        if (isset($this->factories[$id])) {
+            $factory = new ReflectionMethod(
+                $this->factories[$id]["class"],
+                $this->factories[$id]["method"]
+            );
+        }
+
+        $this->definitions[$id] = new Definition(
+            $id,
+            true,
+            $aliases,
+            $dependencies,
+            $factory
+        );
 
         return $this;
     }
@@ -142,6 +169,19 @@ class Container implements ContainerInterface
     public function addAlias(string $id, string $class): self
     {
         $this->aliases[$id] = $class;
+
+        return $this;
+    }
+
+    /**
+     * @param string $id
+     * @param string $class
+     * @param string $method
+     * @return $this
+     */
+    public function addFactory(string $id, string $class, string $method): self
+    {
+        $this->factories[$id] = ["class" => $class, "method" => $method];
 
         return $this;
     }
