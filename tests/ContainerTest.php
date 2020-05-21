@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\NotFoundExceptionInterface;
 use TBoileau\DependencyInjection\Container;
 use TBoileau\DependencyInjection\Tests\Fixtures\Bar;
+use TBoileau\DependencyInjection\Tests\Fixtures\BarFactory;
 use TBoileau\DependencyInjection\Tests\Fixtures\Database;
 use TBoileau\DependencyInjection\Tests\Fixtures\Foo;
 use TBoileau\DependencyInjection\Tests\Fixtures\Router;
@@ -66,6 +67,15 @@ class ContainerTest extends TestCase
         $this->assertInstanceOf(Router::class, $router);
     }
 
+    public function test if service is found with factory()
+    {
+        $container = new Container();
+        $container->addFactory(Bar::class, BarFactory::class, "create");
+        $bar = $container->get(Bar::class);
+        $this->assertInstanceOf(Bar::class, $bar);
+        $this->assertInstanceOf(Foo::class, $bar->foo);
+    }
+
     public function test if parameter is found()
     {
         $container = new Container();
@@ -85,5 +95,12 @@ class ContainerTest extends TestCase
         $container = new Container();
         $this->expectException(NotFoundExceptionInterface::class);
         $container->get(Fail::class);
+    }
+
+    public function test if alias not found()
+    {
+        $container = new Container();
+        $this->expectException(NotFoundExceptionInterface::class);
+        $container->get(\DateTimeInterface::class);
     }
 }
