@@ -5,17 +5,25 @@ Dependency Injection
 [Youtube](https://www.youtube.com/c/ThomasBoileau)
 
 # Installation
-Cloner le repository :
+
 ```
-git clone https://github.com/TBoileau/dependency-injection.git
+composer require tboileau/dependency-injection ^1.0
 ```
 
-Installer les dépendances :
-```
-composer install
+# Add alias 
+
+```php
+<?php
+
+$container->addAlias(FooInterface::class, Foo::class);
+$foo = $container->get(FooInterface::class);
 ```
 
-Lancer les tests :
-```
-vendor/bin/phpunit
+# Add factory
+
+```php
+<?php
+
+$container->addFactory(Foo::class, FooFactory::class, "create");
+$foo = $container->get(Foo::class);
 ```
